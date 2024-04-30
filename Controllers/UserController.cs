@@ -30,11 +30,13 @@ namespace iEvent.Controllers
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _context;
         private readonly IManageImage _iManageImage;
+        private readonly IUnitOfWork _unitOfWork;
 
         public UserController(UserManager<User> userManager, 
             RoleManager<IdentityRole> roleManager,
             SignInManager<User> signInManager, 
-            IConfiguration configuration, ApplicationDbContext context, IManageImage iManageImage)
+            IConfiguration configuration, ApplicationDbContext context,
+            IUnitOfWork unitOfWork, IManageImage iManageImage)
 
         {
             _userManager = userManager;
@@ -43,6 +45,7 @@ namespace iEvent.Controllers
             _signInManager = signInManager;
             _context = context;
             _iManageImage = iManageImage;
+            _unitOfWork = unitOfWork;
         }
 
 
@@ -157,7 +160,7 @@ namespace iEvent.Controllers
         {
             var user = await GetCurrentUserAsync();
             var result = await _iManageImage.UploadUserPhoto(_IFormFile, user);
-            _context.SaveChanges();
+            _unitOfWork.Commit();
             return Ok(result);
         }
 

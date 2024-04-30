@@ -1,4 +1,5 @@
 ﻿using iEvent.Domain;
+using iEvent.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace iEvent.Infastructure
@@ -10,6 +11,11 @@ namespace iEvent.Infastructure
             var builder = WebApplication.CreateBuilder();
             ConfigurationManager configuration = builder.Configuration;
             services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("Connstr")));
+            services.AddScoped<ICommentRepository, CommentRepository>();
+            services.AddScoped<IProblemCommentRepository, ProblemCommentRepository>();
+            services.AddScoped<IEventRepository, EventRepository>();
+            services.AddScoped<IMapOfEventRepository, MapOfEventRepository>();
+            services.AddScoped<IProblemRepository, ProblemRepository>();
             //services.AddScoped<IUserRepository, UserRepository>();
             //services.AddScoped<IPostRepository, PostRepository>();
             services.AddScoped<IUnitOfWork>(sp => sp.GetService<ApplicationDbContext>());

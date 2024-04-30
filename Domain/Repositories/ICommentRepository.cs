@@ -1,6 +1,9 @@
-﻿namespace iEvent.Domain.Repositories
+﻿using iEvent.Domain.Models;
+
+namespace iEvent.Domain.Repositories
 {
-    public class ICommentRepository
+    public interface ICommentRepository
     {
+        void AddComment(Comment com);
     }
 }

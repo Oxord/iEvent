@@ -3,18 +3,19 @@ using iEvent.Infastructure;
 
 namespace iEvent.Domain.Repositories
 {
-    internal class CommentRepository: ICommentRepository
+
+    internal class ProblemCommentRepository : IProblemCommentRepository
     {
         private readonly ApplicationDbContext _context;
 
-        public CommentRepository(ApplicationDbContext context)
+        public ProblemCommentRepository(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        public void AddComment(Comment com)
+        public void AddComment(ProblemComment com)
         {
-            _context.Comments.Add(com);
+            _context.ProblemComments.Add(com);
         }
 
     }

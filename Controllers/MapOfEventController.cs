@@ -2,7 +2,9 @@
 using iEvent.Auth;
 using iEvent.Auth.MapOfEventDto;
 using iEvent.Auth.UserDto;
+using iEvent.Domain;
 using iEvent.Domain.Models;
+using iEvent.Domain.Repositories;
 using iEvent.DTO;
 using iEvent.DTO.MapOfEventDto;
 using iEvent.Infastructure;
@@ -19,6 +21,7 @@ using System.Xml.Linq;
 
 namespace iEvent.Controllers
 {
+    [Authorize]
     [Route("api/[controller]/[action]")]
     [ApiController]
     public class MapOfEventController : ControllerBase
@@ -26,12 +29,18 @@ namespace iEvent.Controllers
         private readonly UserManager<User> _userManager;
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _context;
-        public MapOfEventController(UserManager<User> userManager, IConfiguration configuration, ApplicationDbContext context)
+        private readonly IMapOfEventRepository _MapRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        public MapOfEventController(UserManager<User> userManager, IConfiguration configuration, 
+            ApplicationDbContext context, IUnitOfWork unitOfWork, 
+            IMapOfEventRepository mapRepository)
 
         {
             _userManager = userManager;
             _configuration = configuration;
             _context = context;
+            _unitOfWork = unitOfWork;
+            _MapRepository = mapRepository;
         }
 
         private Task<User> GetCurrentUserAsync() => _userManager.GetUserAsync(HttpContext.User);
@@ -60,14 +69,12 @@ namespace iEvent.Controllers
                 Audience = model.Audience,
             };
 
-            _context.Add(mapOfevent);
-            _context.SaveChanges();
+            _MapRepository.AddMapOfEvent(mapOfevent);
+            _unitOfWork.Commit();
             return Ok(new Response { Status = "Success", Message = "Map of Event created successfully!" });
 
         }
 
-
-        [Authorize]
         [HttpGet(Name = "GetMaps")]
         public async Task<ActionResult<List<MapOfEventView>>> GetMaps()
         {
@@ -85,7 +92,7 @@ namespace iEvent.Controllers
             }
             if (Events_Count > 0)
             {
-                return events.ToList().ConvertAll(x => new MapOfEventView() { Name = x.Name, Description = x.Description });
+                return _MapRepository.GetMaps(events);
             }
             return StatusCode(StatusCodes.Status404NotFound, new Response { Status = "Error", Message = "Для вас карт событий не нашлось :(" });
 
@@ -97,11 +104,7 @@ namespace iEvent.Controllers
             var CurrentMap = GetMapById(mapId);
             if (CurrentMap != null)
             {
-                return new MapOfEventView()
-                {
-                    Name = CurrentMap.Name,
-                    Description = CurrentMap.Description,
-                };
+                return _MapRepository.GetMap(CurrentMap);
             }
             return StatusCode(StatusCodes.Status404NotFound, new Response { Status = "Error", Message = "Такой карты событий нету" });
         }

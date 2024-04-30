@@ -10,6 +10,7 @@ using iEvent.Auth.ProblemDto;
 using iEvent.Domain;
 using System.Text.Json;
 using System.Xml.Linq;
+using iEvent.Domain.Repositories;
 
 namespace iEvent.Controllers
 {
@@ -21,13 +22,19 @@ namespace iEvent.Controllers
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _context;
         private readonly IManageImage _iManageImage;
-        public ProblemController(UserManager<User> userManager, IConfiguration configuration, ApplicationDbContext context, IManageImage iManageImage)
+        private readonly IProblemRepository _problemRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        public ProblemController(UserManager<User> userManager, IConfiguration configuration, 
+            ApplicationDbContext context, IManageImage iManageImage,
+            IUnitOfWork unitOfWork, IProblemRepository problemRepository)
 
         {
             _userManager = userManager;
             _configuration = configuration;
             _context = context;
             _iManageImage = iManageImage;
+            _unitOfWork = unitOfWork;
+            _problemRepository = problemRepository;
         }
 
 
@@ -47,8 +54,8 @@ namespace iEvent.Controllers
                 authorImage = user.ProfilePhoto,
                 Images = "",
             };
-            _context.Problems.Add(problem);
-            _context.SaveChanges();
+            _problemRepository.AddProblem(problem);
+            _unitOfWork.Commit();
             return Ok();
 
         }
@@ -57,7 +64,7 @@ namespace iEvent.Controllers
         [HttpGet(Name = "GetAllProblems")]
         public async Task<ActionResult<List<ProblemInList>>> GetAllProblems()
         {
-            return _context.Problems.ToList().ConvertAll(x => new ProblemInList { Title = x.Title, Category = x.Category });
+            return _problemRepository.GetProblems();
         }
 
         //[Authorize]
@@ -97,32 +104,15 @@ namespace iEvent.Controllers
                             authorSurname = com.authorSurname,
                             authorAvatar = com.authorImage,
                             Text = com.Text,
-                            //photos = ,
                         });
                     }
                 }
                 if (current_problem.Images != "") 
                 {
                     List<int>? photosId = JsonSerializer.Deserialize<List<int>>(current_problem.Images);
-                    return new ProblemOnly { 
-                        Title = current_problem.Title,
-                        Category = current_problem.Category,
-                        DescriptionText = current_problem.DescriptionText,
-                        authorName = current_problem.authorName,
-                        authorSurname = current_problem.authorSurname,
-                        Comments = comments,
-                        photos = photosId,
-                    };
+                    return _problemRepository.GetProblemWithPhoto(current_problem, comments, photosId);
                 }
-                return new ProblemOnly
-                {
-                    Title = current_problem.Title,
-                    Category = current_problem.Category,
-                    DescriptionText = current_problem.DescriptionText,
-                    authorName = current_problem.authorName,
-                    authorSurname = current_problem.authorSurname,
-                    Comments = comments,
-                };
+                return _problemRepository.GetProblem(current_problem, comments);
             }
             return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Такой проблемы не найдено" });
         }
@@ -135,7 +125,7 @@ namespace iEvent.Controllers
             if (current_problem != null)
             {
                 var result = await _iManageImage.UploadProblemFiles(_IFormFile, current_problem);
-                _context.SaveChanges();
+                _unitOfWork.Commit();
                 return Ok(result);
             }
             return BadRequest("Такой проблемы нету");

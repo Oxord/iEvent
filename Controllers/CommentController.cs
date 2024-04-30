@@ -1,5 +1,6 @@
 ﻿using iEvent.Domain;
 using iEvent.Domain.Models;
+using iEvent.Domain.Repositories;
 using iEvent.DTO;
 using iEvent.DTO.CommentDto;
 using iEvent.Infastructure;
@@ -18,13 +19,21 @@ namespace iEvent.Controllers
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _context;
         private readonly IManageImage _iManageImage;
-        public CommentController(UserManager<User> userManager, IConfiguration configuration, ApplicationDbContext context, IManageImage iManageImage)
-
+        private readonly ICommentRepository _commentRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IProblemCommentRepository _problemCommentRepository;
+        public CommentController(UserManager<User> userManager, 
+            IConfiguration configuration, ApplicationDbContext context, 
+            IManageImage iManageImage, ICommentRepository commentRepository,
+            IUnitOfWork unitOfWork, IProblemCommentRepository problemCommentRepository)
         {
             _userManager = userManager;
             _configuration = configuration;
             _context = context;
             _iManageImage = iManageImage;
+            _commentRepository = commentRepository;
+            _unitOfWork = unitOfWork;
+            _problemCommentRepository = problemCommentRepository;
         }
         private Task<User> GetCurrentUserAsync() => _userManager.GetUserAsync(HttpContext.User);
 
@@ -45,8 +54,8 @@ namespace iEvent.Controllers
                     authorImage = user.ProfilePhoto,
                     Images = "",
                 };
-                _context.Comments.Add(com);
-                _context.SaveChanges();
+                _commentRepository.AddComment(com);
+                _unitOfWork.Commit();
                 return Ok();
             }
 
@@ -61,7 +70,7 @@ namespace iEvent.Controllers
             if (current_comment != null)
             {
                 var result = await _iManageImage.UploadCommentsFiles(_IFormFile, current_comment);
-                _context.SaveChanges();
+                _unitOfWork.Commit();
                 return Ok(result);
             }
             return BadRequest("Такого комментария нету");
@@ -84,8 +93,8 @@ namespace iEvent.Controllers
                     authorImage = user.ProfilePhoto,
                     Images = "",
                 };
-                _context.ProblemComments.Add(com);
-                _context.SaveChanges();
+                _problemCommentRepository.AddComment(com);
+                _unitOfWork.Commit();
                 return Ok();
             }
 
@@ -100,7 +109,7 @@ namespace iEvent.Controllers
             if (current_comment != null)
             {
                 var result = await _iManageImage.UploadProblemCommentsFiles(_IFormFile, current_comment);
-                _context.SaveChanges();
+                _unitOfWork.Commit();
                 return Ok(result);
             }
             return BadRequest("Такого комментария нету");

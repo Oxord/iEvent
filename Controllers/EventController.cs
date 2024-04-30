@@ -20,6 +20,7 @@ using iEvent.DTO;
 using iEvent.DTO.EventDto;
 using iEvent.Domain;
 using System.Text.Json;
+using iEvent.Domain.Repositories;
 
 namespace iEvent.Controllers
 {
@@ -31,13 +32,19 @@ namespace iEvent.Controllers
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _context;
         private readonly IManageImage _iManageImage;
-        public EventController(UserManager<User> userManager, IConfiguration configuration, ApplicationDbContext context, IManageImage iManageImage)
+        private readonly IEventRepository _EventRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        public EventController(UserManager<User> userManager, IConfiguration configuration, 
+            ApplicationDbContext context, IManageImage iManageImage,
+            IUnitOfWork unitOfWork, IEventRepository eventRepository)
 
         {
             _userManager = userManager;
             _configuration = configuration;
             _context = context;
             _iManageImage = iManageImage;
+            _EventRepository = eventRepository;
+            _unitOfWork = unitOfWork;
         }
 
 
@@ -58,8 +65,8 @@ namespace iEvent.Controllers
                     Map = CurrentMap,
                     Images = ""
                 };
-                _context.TableEvents.Add(even);
-                _context.SaveChanges();
+                _EventRepository.AddEvent(even);
+                _unitOfWork.Commit();
                 return Ok();
             }
 
@@ -74,7 +81,7 @@ namespace iEvent.Controllers
             if (currentevent != null)
             {
                 var result = await _iManageImage.UploadFiles(_IFormFile, currentevent);
-                _context.SaveChanges();
+                _unitOfWork.Commit();
                 return Ok(result);
             }
             return BadRequest("Такого события нету");
@@ -96,7 +103,7 @@ namespace iEvent.Controllers
                         resultEvents.Add(ev);
                     }
                 }
-                return resultEvents.ConvertAll(x => new EventOnMap() { Name = x.Name, Date = x.Date, DescriptionText = x.DescriptionText, Mark = x.Mark });
+                return _EventRepository.GetEvents(resultEvents);
             }
             return StatusCode(StatusCodes.Status404NotFound, new Response { Status = "Error", Message = "На этой карте событий не нашлось :(" });
         }
@@ -142,15 +149,7 @@ namespace iEvent.Controllers
                         });
                     }
                 }
-                return new EventOnly()
-                {
-                    Name = ev.Name,
-                    Date = ev.Date,
-                    DescriptionText = ev.DescriptionText,
-                    Mark = ev.Mark,
-                    Comments = comments,
-                    
-                };
+                return _EventRepository.GetEventById(ev, comments);
 
             }
             return StatusCode(StatusCodes.Status404NotFound, new Response { Status = "Error", Message = "Такого события нету" });
@@ -173,7 +172,7 @@ namespace iEvent.Controllers
                     ev.Mark = (ev.Mark + model.Mark) / marks_count;
                 }
                 _context.Update(ev);
-                _context.SaveChanges();
+                _unitOfWork.Commit();
                 return ev;
             }
 

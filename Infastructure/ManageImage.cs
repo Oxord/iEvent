@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace iEvent.Infastructure
 {
-    public class ManageImage : IManageImage
+    internal class ManageImage : IManageImage
     {
         private readonly ApplicationDbContext _context;
         public ManageImage(ApplicationDbContext context)
