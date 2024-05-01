@@ -13,5 +13,6 @@ namespace iEvent.Domain.Models
         public int Class { get; set; }
         public string Patronymic { get; set; }
         public int ProfilePhoto { get; set; }
+        public List<ProblemComment> ProblemComments { get; set; }
     }
 }

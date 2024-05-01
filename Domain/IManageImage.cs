@@ -12,6 +12,7 @@ namespace iEvent.Domain
         Task<string> UploadProblemFiles(List<IFormFile> _IFormFile, Problem CurrentProblem);
         Task<string> UploadProblemCommentsFiles(List<IFormFile> _IFormFile, ProblemComment CurrentProblemComment);
         Task<(byte[], string, string)> DownloadFile(Photo currnetPhoto);
+        Task<(byte[], string, string)> DownloadDefaultUserIcon();
         //Task<(byte[], string, string)> DownloadFiles(Event CurrentEvent);
 
     }

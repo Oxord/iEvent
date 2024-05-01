@@ -180,35 +180,25 @@ namespace iEvent.Infastructure
                 throw ex;
             }
         }
-
-        
-        /*
-        public async Task<string> DownloadFile(Event CurrentEvent)
+        public async Task<(byte[], string, string)> DownloadDefaultUserIcon()
         {
             try
             {
-                var photo = JsonSerializer.Deserialize<List<String>>(CurrentEvent.Images);
-                foreach (string p in photo)
+                var _GetFilePath = Common.GetFilePath("DefaultUserIcon.png");
+                var provider = new FileExtensionContentTypeProvider();
+                if (!provider.TryGetContentType(_GetFilePath, out var _ContentType))
                 {
-                    Console.WriteLine(p);
-                    var _GetFilePath = Common.GetFilePath(p);
-                    var provider = new FileExtensionContentTypeProvider();
-                    if (!provider.TryGetContentType(_GetFilePath, out var _ContentType))
-                    {
-                        _ContentType = "application/octet-stream";
-                    }
-                    var _ReadAllBytesAsync = await File.ReadAllBytesAsync(_GetFilePath);
-                    return (_ReadAllBytesAsync, _ContentType, Path.GetFileName(_GetFilePath));
+                    _ContentType = "application/octet-stream";
                 }
-                
+                var _ReadAllBytesAsync = await File.ReadAllBytesAsync(_GetFilePath);
+                return (_ReadAllBytesAsync, _ContentType, Path.GetFileName(_GetFilePath));
             }
             catch (Exception ex)
             {
                 throw ex;
             }
-        
         }
-        */
-        
+
+                      
     }
 }

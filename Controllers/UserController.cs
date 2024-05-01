@@ -1,7 +1,9 @@
 ﻿using iEvent.Auth;
+using iEvent.Auth.ProblemDto;
 using iEvent.Auth.UserDto;
 using iEvent.Domain;
 using iEvent.Domain.Models;
+using iEvent.Domain.Repositories;
 using iEvent.DTO;
 using iEvent.DTO.UserDto;
 using iEvent.Infastructure;
@@ -31,12 +33,15 @@ namespace iEvent.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IManageImage _iManageImage;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IUserRepository _userRepository;
+
 
         public UserController(UserManager<User> userManager, 
             RoleManager<IdentityRole> roleManager,
             SignInManager<User> signInManager, 
             IConfiguration configuration, ApplicationDbContext context,
-            IUnitOfWork unitOfWork, IManageImage iManageImage)
+            IUnitOfWork unitOfWork, IManageImage iManageImage,
+            IUserRepository userRepository)
 
         {
             _userManager = userManager;
@@ -46,12 +51,12 @@ namespace iEvent.Controllers
             _context = context;
             _iManageImage = iManageImage;
             _unitOfWork = unitOfWork;
+            _userRepository = userRepository;
         }
 
 
         [HttpPost]
         [Route("login")]
-
         public async Task<IActionResult> Login([FromBody] LoginModel model)
         {
             var user = await _userManager.FindByNameAsync(model.Username);
@@ -61,7 +66,7 @@ namespace iEvent.Controllers
 
                 var authClaims = new List<Claim>
                 {
-                    new Claim(ClaimTypes.Name, user.Name),
+                    //new Claim(ClaimTypes.Name, user.Name),
                     new Claim(ClaimTypes.NameIdentifier, user.Id),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 };
@@ -119,6 +124,10 @@ namespace iEvent.Controllers
                 await _roleManager.CreateAsync(new IdentityRole(UserRoles.Parent));
             if (!await _roleManager.RoleExistsAsync(UserRoles.Administrator))
                 await _roleManager.CreateAsync(new IdentityRole(UserRoles.Administrator));
+            if (!await _roleManager.RoleExistsAsync(UserRoles.Classman))
+                await _roleManager.CreateAsync(new IdentityRole(UserRoles.Classman));
+            if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
+                await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
 
             if (await _roleManager.RoleExistsAsync(UserRoles.Teacher) && type == "Учитель")
             {
@@ -140,7 +149,12 @@ namespace iEvent.Controllers
                 await _userManager.AddToRoleAsync(user, UserRoles.Administrator);
             }
 
-            return Ok(new Response { Status = "Success", Message = "User created successfully!" });
+            if (await _roleManager.RoleExistsAsync(UserRoles.Classman) && type == "Студент")
+            {
+                await _userManager.AddToRoleAsync(user, UserRoles.Classman);
+            }
+
+            return Ok();
         }
 
         [HttpGet]
@@ -154,15 +168,27 @@ namespace iEvent.Controllers
         }
         private Task<User> GetCurrentUserAsync() => _userManager.GetUserAsync(HttpContext.User);
 
-        [HttpPut("EditUser")]
+        [HttpPut("EditUserPhoto")]
         [Authorize]
-        public async Task<ActionResult<User>> EditUser(IFormFile _IFormFile)
+        public async Task<ActionResult<User>> EditUserPhoto(IFormFile _IFormFile)
         {
             var user = await GetCurrentUserAsync();
             var result = await _iManageImage.UploadUserPhoto(_IFormFile, user);
             _unitOfWork.Commit();
             return Ok(result);
         }
+
+        [HttpPut("EditUser")]
+        [Authorize]
+        public async Task<ActionResult<User>> EditUser([FromBody] EditUserModel model)
+        {
+            var user = await GetCurrentUserAsync();
+            user.Name = model.Name;
+            user.Surname = model.Surname;
+            _unitOfWork.Commit();
+            return Ok();
+        }
+
 
         [HttpGet("GetUserPhoto")]
         [Authorize]
@@ -175,9 +201,17 @@ namespace iEvent.Controllers
                 var result = await _iManageImage.DownloadFile(currnetPhoto);
                 return File(result.Item1, result.Item2, result.Item2);
             }
-            return BadRequest("Такого фота нет");
+            return NotFound();
         }
 
+        [Authorize]
+        [HttpGet("GetUserProblems")]
+        public async Task<ActionResult<List<ProblemInList>>> GetUserProblems()
+        {
+            var user = await GetCurrentUserAsync();
+            if (user != null) return _userRepository.GetUserProblems(user);
+            return NotFound();
+        }
 
         private JwtSecurityToken GetToken(List<Claim> authClaims)
         {

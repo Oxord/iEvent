@@ -57,6 +57,21 @@ namespace iEvent.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "EventMarkUsers",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    EventId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsMarked = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EventMarkUsers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "mapOfEvents",
                 columns: table => new
                 {
@@ -93,8 +108,7 @@ namespace iEvent.Migrations
                     Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     DescriptionText = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Category = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    authorName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    authorSurname = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AuthorId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     authorImage = table.Column<int>(type: "int", nullable: false),
                     Images = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
@@ -218,6 +232,7 @@ namespace iEvent.Migrations
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Date = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Mark = table.Column<int>(type: "int", nullable: false),
+                    WholeMark = table.Column<int>(type: "int", nullable: false),
                     MarkCount = table.Column<int>(type: "int", nullable: false),
                     DescriptionText = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     MapId = table.Column<int>(type: "int", nullable: false),
@@ -241,15 +256,21 @@ namespace iEvent.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Text = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    authorName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    authorSurname = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AuthorId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     authorImage = table.Column<int>(type: "int", nullable: false),
+                    authorLogin = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ProblemId = table.Column<int>(type: "int", nullable: false),
-                    Images = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Images = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ProblemComments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProblemComments_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ProblemComments_Problems_ProblemId",
                         column: x => x.ProblemId,
@@ -265,9 +286,9 @@ namespace iEvent.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Text = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    authorName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    authorSurname = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AuthorId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     authorImage = table.Column<int>(type: "int", nullable: false),
+                    authorLogin = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     EventId = table.Column<int>(type: "int", nullable: false),
                     Images = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
@@ -332,6 +353,11 @@ namespace iEvent.Migrations
                 column: "ProblemId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProblemComments_UserId",
+                table: "ProblemComments",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TableEvents_MapId",
                 table: "TableEvents",
                 column: "MapId");
@@ -359,6 +385,9 @@ namespace iEvent.Migrations
                 name: "Comments");
 
             migrationBuilder.DropTable(
+                name: "EventMarkUsers");
+
+            migrationBuilder.DropTable(
                 name: "Photos");
 
             migrationBuilder.DropTable(
@@ -368,10 +397,10 @@ namespace iEvent.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "TableEvents");
 
             migrationBuilder.DropTable(
-                name: "TableEvents");
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "Problems");

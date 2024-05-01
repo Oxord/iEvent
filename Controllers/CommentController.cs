@@ -49,17 +49,17 @@ namespace iEvent.Controllers
                 {
                     Text = model.Text,
                     Event = CurrentEvent,
-                    authorName = user.Name,
-                    authorSurname = user.Surname,
+                    AuthorId = user.Id,
                     authorImage = user.ProfilePhoto,
                     Images = "",
+                    authorLogin = user.Id,
                 };
                 _commentRepository.AddComment(com);
                 _unitOfWork.Commit();
                 return Ok();
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Unlucky" });
+            return BadRequest(StatusCodes.Status500InternalServerError);
         }
 
         [Authorize]
@@ -73,35 +73,73 @@ namespace iEvent.Controllers
                 _unitOfWork.Commit();
                 return Ok(result);
             }
-            return BadRequest("Такого комментария нету");
+            return NotFound();
         }
 
         [Authorize]
+        [HttpPut("EditComment")]
+        public async Task<ActionResult> EditComment(int comentId, [FromBody] CreateCommentModel model)
+        {
+            var current_comment = _context.Comments.FirstOrDefault(x => x.Id == comentId);
+            var user = await GetCurrentUserAsync();
+            if (current_comment != null && user != null)
+            {
+                if(current_comment.authorLogin == user.Id)
+                {
+                    current_comment.Text = model.Text;
+                    _unitOfWork.Commit();
+                    return Ok();
+                }
+                return Forbid();
+            }
+            return NotFound();
+        }
+
+        [Authorize]
+        [HttpDelete("DeleteComment")]
+        public async Task<ActionResult> DeleteComment(int comentId)
+        {
+            var current_comment = _context.Comments.FirstOrDefault(x => x.Id == comentId);
+            var user = await GetCurrentUserAsync();
+            if (current_comment != null && user != null)
+            {
+                if (current_comment.authorLogin == user.Id)
+                {
+                    _context.Comments.Remove(current_comment);
+                    _unitOfWork.Commit();
+                    return Ok();
+                }
+                return Forbid();
+            }
+            return NotFound();
+        }
+
+        [Authorize(Policy = "PeopleCanSolve")]
         [HttpPost("CreateCommentByProblem")]
         public async Task<ActionResult<Comment>> CreateCommentByProblem([FromBody] CreateCommentModel model, int problemId)
         {
             var user = await GetCurrentUserAsync();
             var CurrentProblem = GetProblemById(problemId);
-            if (CurrentProblem != null)
+            if (CurrentProblem != null && user != null)
             {
                 ProblemComment com = new()
                 {
                     Text = model.Text,
                     Problem = CurrentProblem,
-                    authorName = user.Name,
-                    authorSurname = user.Surname,
+                    AuthorId = user.Id,
                     authorImage = user.ProfilePhoto,
                     Images = "",
+                    authorLogin = user.Id,
                 };
                 _problemCommentRepository.AddComment(com);
                 _unitOfWork.Commit();
                 return Ok();
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Unlucky" });
+            return Forbid();
         }
 
-        [Authorize]
+        [Authorize(Policy = "PeopleCanSolve")]
         [HttpPut("AddImagesToCommentToProblem")]
         public async Task<ActionResult> AddImagesToCommentToProblem(List<IFormFile> _IFormFile, int comentId)
         {
@@ -112,9 +150,46 @@ namespace iEvent.Controllers
                 _unitOfWork.Commit();
                 return Ok(result);
             }
-            return BadRequest("Такого комментария нету");
+            return Forbid();
         }
 
+        [Authorize(Policy = "PeopleCanSolve")]
+        [HttpPut("EditProblemComment")]
+        public async Task<ActionResult> EditProblemComment(int comentId, [FromBody] CreateCommentModel model)
+        {
+            var current_comment = _context.ProblemComments.FirstOrDefault(x => x.Id == comentId);
+            var user = await GetCurrentUserAsync();
+            if (current_comment != null && user != null)
+            {
+                if (current_comment.authorLogin == user.Id)
+                {
+                    current_comment.Text = model.Text;
+                    _unitOfWork.Commit();
+                    return Ok();
+                }
+                return Forbid();
+            }
+            return NotFound(); ;
+        }
+
+        [Authorize(Policy = "PeopleCanSolve")]
+        [HttpDelete("DeleteProblemComment")]
+        public async Task<ActionResult> DeleteProblemComment(int comentId)
+        {
+            var current_comment = _context.ProblemComments.FirstOrDefault(x => x.Id == comentId);
+            var user = await GetCurrentUserAsync();
+            if (current_comment != null && user != null)
+            {
+                if (current_comment.authorLogin == user.Id)
+                {
+                    _context.ProblemComments.Remove(current_comment);
+                    _unitOfWork.Commit();
+                    return Ok();
+                }
+                return Forbid();
+            }
+            return NotFound();
+        }
 
         private Event GetEventById(int eventId)
         {

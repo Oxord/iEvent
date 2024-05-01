@@ -163,6 +163,10 @@ namespace iEvent.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AuthorId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("EventId")
                         .HasColumnType("int");
 
@@ -177,11 +181,7 @@ namespace iEvent.Migrations
                     b.Property<int>("authorImage")
                         .HasColumnType("int");
 
-                    b.Property<string>("authorName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("authorSurname")
+                    b.Property<string>("authorLogin")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -225,11 +225,37 @@ namespace iEvent.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("WholeMark")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("MapId");
 
                     b.ToTable("TableEvents");
+                });
+
+            modelBuilder.Entity("iEvent.Domain.Models.EventMarkUser", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("EventId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsMarked")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EventMarkUsers");
                 });
 
             modelBuilder.Entity("iEvent.Domain.Models.MapOfEvent", b =>
@@ -279,6 +305,10 @@ namespace iEvent.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AuthorId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -298,14 +328,6 @@ namespace iEvent.Migrations
                     b.Property<int>("authorImage")
                         .HasColumnType("int");
 
-                    b.Property<string>("authorName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("authorSurname")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
                     b.ToTable("Problems");
@@ -319,6 +341,10 @@ namespace iEvent.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AuthorId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Images")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -330,20 +356,21 @@ namespace iEvent.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<int>("authorImage")
                         .HasColumnType("int");
 
-                    b.Property<string>("authorName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("authorSurname")
+                    b.Property<string>("authorLogin")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ProblemId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("ProblemComments");
                 });
@@ -516,6 +543,10 @@ namespace iEvent.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("iEvent.Domain.Models.User", null)
+                        .WithMany("ProblemComments")
+                        .HasForeignKey("UserId");
+
                     b.Navigation("Problem");
                 });
 
@@ -527,6 +558,11 @@ namespace iEvent.Migrations
             modelBuilder.Entity("iEvent.Domain.Models.MapOfEvent", b =>
                 {
                     b.Navigation("Events");
+                });
+
+            modelBuilder.Entity("iEvent.Domain.Models.User", b =>
+                {
+                    b.Navigation("ProblemComments");
                 });
 #pragma warning restore 612, 618
         }

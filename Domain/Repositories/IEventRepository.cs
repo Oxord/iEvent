@@ -9,6 +9,6 @@ namespace iEvent.Domain.Repositories
     {
         void AddEvent(Event even);
         List<EventOnMap> GetEvents(List<Event> events);
-        EventOnly GetEventById(Event even, List<ViewCommentModel> comments);
+        EventOnly GetEventById(Event even, List<ViewCommentModel> comments, List<int> photos);
     }
 }

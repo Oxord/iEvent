@@ -1,3 +1,4 @@
+using iEvent.Auth.UserDto;
 using iEvent.Domain.Models;
 using iEvent.Infastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -48,40 +49,20 @@ builder.Services.AddControllers().AddNewtonsoftJson(options =>
     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
 );
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Learn more about configuring Swagger/OpenAPI at 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(swagger =>
- {
-     swagger.SwaggerDoc("v1", new OpenApiInfo
-     {
-         Version = "v1",
-         Title = "iEvent",
-     });
-     // To Enable authorization using Swagger (JWT)
-     swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
-     {
-         Name = "Authorization",
-         Type = SecuritySchemeType.ApiKey,
-         Scheme = "Bearer",
-         BearerFormat = "JWT",
-         In = ParameterLocation.Header,
-         Description = "Bearer",
-     });
-     swagger.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        new string[] {}
-                    }
-                });
- });
+builder.Services.AddSwaggerGen();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CreatorMaps", policy =>
+        policy.RequireRole(UserRoles.Teacher, UserRoles.Admin, UserRoles.Administrator));
+    options.AddPolicy("ProblemCreators", policy =>
+        policy.RequireRole(UserRoles.Student, UserRoles.Teacher, UserRoles.Administrator, UserRoles.Admin));
+    options.AddPolicy("PeopleCanMark", policy =>
+        policy.RequireRole(UserRoles.Student, UserRoles.Admin));
+    options.AddPolicy("PeopleCanSolve", policy =>
+        policy.RequireRole(UserRoles.Student, UserRoles.Admin, UserRoles.Administrator, UserRoles.Teacher));
+});
 
 var app = builder.Build();
 

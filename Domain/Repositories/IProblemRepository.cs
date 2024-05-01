@@ -10,8 +10,9 @@ namespace iEvent.Domain.Repositories
     {
         void AddProblem(Problem problem);
         List<ProblemInList> GetProblems();
-        ProblemOnly GetProblemWithPhoto(Problem current_problem, List<ViewCommentModel> comments, List<int> photos);
-        ProblemOnly GetProblem(Problem current_problem, List<ViewCommentModel> comments);
+        ProblemOnly GetProblemWithPhoto(Problem current_problem, List<ViewCommentModel> comments, List<int> photos, User authorProblem);
+        ProblemOnly GetProblem(Problem current_problem, List<ViewCommentModel> comments, User authorProblem);
+        void RemoveProblem(Problem current_problem);
 
         //MapOfEventView GetMap(MapOfEvent map);
     }

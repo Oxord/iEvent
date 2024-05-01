@@ -26,18 +26,32 @@ namespace iEvent.Domain.Repositories
             return events.ConvertAll(x => new EventOnMap() { Name = x.Name, Date = x.Date, DescriptionText = x.DescriptionText, Mark = x.Mark });
         }
 
-        public EventOnly GetEventById(Event even, List<ViewCommentModel> comments)
+        public EventOnly GetEventById(Event even, List<ViewCommentModel> comments, List<int> photos)
         {
-            return new EventOnly()
+            if (photos == null)
             {
-                Name = even.Name,
-                Date = even.Date,
-                DescriptionText = even.DescriptionText,
-                Mark = even.Mark,
-                Comments = comments,
+                return new EventOnly()
+                {
+                    Name = even.Name,
+                    Date = even.Date,
+                    DescriptionText = even.DescriptionText,
+                    Mark = even.Mark,
+                    Comments = comments,
 
-            };
-
+                };
+            }
+            else
+            {
+                return new EventOnly()
+                {
+                    Name = even.Name,
+                    Date = even.Date,
+                    DescriptionText = even.DescriptionText,
+                    Mark = even.Mark,
+                    Comments = comments,
+                    photos = photos
+                };
+            }
         }
     }
 }

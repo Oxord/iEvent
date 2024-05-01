@@ -24,7 +24,7 @@ namespace iEvent.Controllers
         private readonly IManageImage _iManageImage;
         private readonly IProblemRepository _problemRepository;
         private readonly IUnitOfWork _unitOfWork;
-        public ProblemController(UserManager<User> userManager, IConfiguration configuration, 
+        public ProblemController(UserManager<User> userManager, IConfiguration configuration,
             ApplicationDbContext context, IManageImage iManageImage,
             IUnitOfWork unitOfWork, IProblemRepository problemRepository)
 
@@ -39,7 +39,7 @@ namespace iEvent.Controllers
 
 
 
-        [Authorize]
+        [Authorize(Policy = "ProblemCreators")]
         [HttpPost(Name = "CreateProblem")]
         public async Task<ActionResult> CreateProblem(CreateProblemModel model)
         {
@@ -49,8 +49,7 @@ namespace iEvent.Controllers
                 Title = model.Title,
                 DescriptionText = model.DescriptionText,
                 Category = model.Category,
-                authorName = user.Name,
-                authorSurname = user.Surname,
+                AuthorId = user.Id,
                 authorImage = user.ProfilePhoto,
                 Images = "",
             };
@@ -60,19 +59,38 @@ namespace iEvent.Controllers
 
         }
 
-        //[Authorize]
+        [Authorize(Policy = "ProblemCreators")]
+        [HttpPut(Name = "EditProblem")]
+        public async Task<ActionResult> EditProblem([FromBody] CreateProblemModel model, int problemId)
+        {
+            var user = await GetCurrentUserAsync();
+            var current_problem = _context.Problems.FirstOrDefault(x => x.Id == problemId);
+            if (current_problem != null && user != null)
+            {
+                if (current_problem.AuthorId == user.Id)
+                {
+                    current_problem.Title = model.Title;
+                    current_problem.DescriptionText = model.DescriptionText;
+                    current_problem.Category = model.Category;
+                    _unitOfWork.Commit();
+                    return Ok();
+                }
+                return Forbid();
+            }
+            return NotFound();
+        }
+
         [HttpGet(Name = "GetAllProblems")]
         public async Task<ActionResult<List<ProblemInList>>> GetAllProblems()
         {
             return _problemRepository.GetProblems();
         }
 
-        //[Authorize]
         [HttpGet(Name = "GetProblem")]
         public async Task<ActionResult<ProblemOnly>> GetProblem(int problemId)
         {
             var current_problem = _context.Problems.FirstOrDefault(x => x.Id == problemId);
-            var Comments = new List<ProblemComment>();
+            var Comments = new List<ProblemComment>(); 
             
             if (current_problem != null)
             {
@@ -83,14 +101,15 @@ namespace iEvent.Controllers
                 List<ViewCommentModel> comments = new();
                 foreach (var com in Comments)
                 {
+                    User author = _context.Users.FirstOrDefault(x => x.Id == com.AuthorId);
                     List<int>? com_photosId = new();
                     if (com.Images != "") 
                     { 
                         com_photosId = JsonSerializer.Deserialize<List<int>>(com.Images);
                         comments.Add(new ViewCommentModel
                         {
-                            authorName = com.authorName,
-                            authorSurname = com.authorSurname,
+                            authorName = author.Name,
+                            authorSurname = author.Surname,
                             authorAvatar = com.authorImage,
                             Text = com.Text,
                             photos = com_photosId,
@@ -98,27 +117,29 @@ namespace iEvent.Controllers
                     }
                     else
                     {
+                        
                         comments.Add(new ViewCommentModel
                         {
-                            authorName = com.authorName,
-                            authorSurname = com.authorSurname,
+                            authorName = author.Name,
+                            authorSurname = author.Surname,
                             authorAvatar = com.authorImage,
                             Text = com.Text,
                         });
                     }
                 }
+                var authorProblem = _context.Users.FirstOrDefault(x => x.Id == current_problem.AuthorId);
                 if (current_problem.Images != "") 
                 {
                     List<int>? photosId = JsonSerializer.Deserialize<List<int>>(current_problem.Images);
-                    return _problemRepository.GetProblemWithPhoto(current_problem, comments, photosId);
+                    return _problemRepository.GetProblemWithPhoto(current_problem, comments, photosId, authorProblem);
                 }
-                return _problemRepository.GetProblem(current_problem, comments);
+                return _problemRepository.GetProblem(current_problem, comments, authorProblem);
             }
-            return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Такой проблемы не найдено" });
+            return NotFound();
         }
 
-        //[Authorize]
-        [HttpPut("AddImagesToProblem")]
+        [Authorize(Policy = "ProblemCreators")]
+        [HttpPut(Name = "AddImagesToProblem")]
         public async Task<ActionResult> AddImagesToProblem(List<IFormFile> _IFormFile, int problemId)
         {
             var current_problem = _context.Problems.FirstOrDefault(x => x.Id == problemId);
@@ -128,7 +149,26 @@ namespace iEvent.Controllers
                 _unitOfWork.Commit();
                 return Ok(result);
             }
-            return BadRequest("Такой проблемы нету");
+            return NotFound();
+        }
+
+        [Authorize(Policy = "ProblemCreators")]
+        [HttpDelete(Name = "DeleteProblem")]
+        public async Task<ActionResult> DeleteProblem(int problemId)
+        {
+            var current_problem = _context.Problems.FirstOrDefault(x => x.Id == problemId);
+            var user = await GetCurrentUserAsync();
+            if (current_problem != null && user != null)
+            {
+                if (current_problem.AuthorId == user.Id)
+                {
+                    _problemRepository.RemoveProblem(current_problem);
+                    _unitOfWork.Commit();
+                    return Ok();
+                }
+                return Forbid();
+            }
+            return NotFound();
         }
 
         private Task<User> GetCurrentUserAsync() => _userManager.GetUserAsync(HttpContext.User);

@@ -49,11 +49,10 @@ namespace iEvent.Controllers
 
 
 
-        [Authorize(Roles = UserRoles.Teacher)]
+        [Authorize(Policy = "CreatorMaps")]
         [HttpPost(Name = "CreateEvent")]
         public async Task<ActionResult<MapOfEvent>> CreateEvent([FromBody] CreateEventModel model, int mapId)
         {
-            //var user = await GetCurrentUserAsync();
             var CurrentMap = GetMapById(mapId);
             if (CurrentMap != null)
             {
@@ -70,11 +69,28 @@ namespace iEvent.Controllers
                 return Ok();
             }
 
-            return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Unlucky" });
+            return Forbid();
         }
 
-        [Authorize(Roles = UserRoles.Teacher)]
-        [HttpPut("AddImagesToEvent")]
+        
+        [Authorize(Policy = "CreatorMaps")]
+        [HttpPut]
+        public async Task<ActionResult> EditEvent(int eventId, [FromBody] CreateEventModel model)
+        {
+            var currentevent = _context.TableEvents.FirstOrDefault(x => x.Id == eventId);
+            if (currentevent != null)
+            {
+                currentevent.Name = model.Name;
+                currentevent.Date = model.Date;
+                currentevent.DescriptionText = model.DescriptionText;
+                _unitOfWork.Commit();
+                return Ok();
+            }
+            return NotFound();
+        }
+
+        [Authorize(Policy = "CreatorMaps")]
+        [HttpPut]
         public async Task<ActionResult> AddImagesToEvent(List<IFormFile> _IFormFile, int eventId)
         {
             var currentevent = _context.TableEvents.FirstOrDefault(x => x.Id == eventId);
@@ -84,13 +100,11 @@ namespace iEvent.Controllers
                 _unitOfWork.Commit();
                 return Ok(result);
             }
-            return BadRequest("Такого события нету");
+            return NotFound();
         }
 
-
-        [Authorize]
-        [HttpGet(Name = "GetEvents")]
-        public async Task<ActionResult<List<EventOnMap>>> GetEvents(int mapId)
+        [HttpGet(Name = "GetAllEvents")]
+        public async Task<ActionResult<List<EventOnMap>>> GetAllEvents(int mapId)
         {
             var CurrentMap = GetMapById(mapId);
             var resultEvents = new List<Event>();
@@ -105,10 +119,9 @@ namespace iEvent.Controllers
                 }
                 return _EventRepository.GetEvents(resultEvents);
             }
-            return StatusCode(StatusCodes.Status404NotFound, new Response { Status = "Error", Message = "На этой карте событий не нашлось :(" });
+            return NotFound();
         }
 
-        [Authorize]
         [HttpGet(Name = "GetEventById")]
         public async Task<ActionResult<EventOnly>> GetEvent(int EventId)
         {
@@ -124,14 +137,15 @@ namespace iEvent.Controllers
                 List<ViewCommentModel> comments = new();
                 foreach (var com in resultComments)
                 {
+                    User author = _context.Users.FirstOrDefault(x => x.Id == com.AuthorId);
                     List<int>? com_photosId = new();
                     if (com.Images != "")
                     {
                         com_photosId = JsonSerializer.Deserialize<List<int>>(com.Images);
                         comments.Add(new ViewCommentModel
                         {
-                            authorName = com.authorName,
-                            authorSurname = com.authorSurname,
+                            authorName = author.Name,
+                            authorSurname = author.Surname,
                             authorAvatar = com.authorImage,
                             Text = com.Text,
                             photos = com_photosId,
@@ -141,42 +155,52 @@ namespace iEvent.Controllers
                     {
                         comments.Add(new ViewCommentModel
                         {
-                            authorName = com.authorName,
-                            authorSurname = com.authorSurname,
+                            authorName = author.Name,
+                            authorSurname = author.Surname,
                             authorAvatar = com.authorImage,
                             Text = com.Text,
-                            //photos = ,
                         });
                     }
                 }
-                return _EventRepository.GetEventById(ev, comments);
+                List<int> event_photos = new();
+                if (ev.Images == "")
+                {
+                    event_photos = null;
+                }
+                else
+                {
+                    event_photos = JsonSerializer.Deserialize<List<int>>(ev.Images);
+                }
+                return _EventRepository.GetEventById(ev, comments, event_photos);
 
             }
-            return StatusCode(StatusCodes.Status404NotFound, new Response { Status = "Error", Message = "Такого события нету" });
+            return NotFound();
         }
         
         
-        [Authorize]
+        [Authorize(Policy = "PeopleCanMark")]
         [HttpPut(Name = "AddMark")]
-        public async Task<ActionResult<Event>> AddMark([FromBody] AddMarkModel model, int EventId, int mapId)
+        public async Task<ActionResult<Event>> AddMark([FromBody] AddMarkModel model, int EventId)
         {
             var user = await GetCurrentUserAsync();
-            var CurrentMap = GetMapById(mapId);
-            int marks_count = 0;
-            if (CurrentMap != null)
+            Event ev = _context.TableEvents.FirstOrDefault(x => x.Id == EventId);
+            
+            if (ev != null && user != null)
             {
-                Event ev = _context.TableEvents.FirstOrDefault(x => x.Id == EventId && x.Map == CurrentMap);
-                if (ev != null)
+                var eventmarkuser = _context.EventMarkUsers.FirstOrDefault(x => x.EventId == ev.Id && x.UserId == user.Id);
+                if (eventmarkuser != null && eventmarkuser.IsMarked)
                 {
-                    marks_count++;
-                    ev.Mark = (ev.Mark + model.Mark) / marks_count;
+                    return BadRequest(new Response { Status = "Unluck", Message = "Вы уже оставляли оценку" });
                 }
+                ev.MarkCount++;
+                ev.WholeMark = ev.WholeMark + model.Mark;
+                ev.Mark = ev.WholeMark / ev.MarkCount;
                 _context.Update(ev);
+                _context.EventMarkUsers.Add(new EventMarkUser { EventId = ev.Id, UserId = user.Id, IsMarked = true });
                 _unitOfWork.Commit();
-                return ev;
+                return Ok();
             }
-
-            return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Unlucky" });
+            return Forbid();
         }
 
 

@@ -14,6 +14,7 @@ namespace iEvent.Infastructure
         public DbSet<Problem> Problems { get; set; }
         public DbSet<ProblemComment> ProblemComments { get; set; }
         public DbSet<Photo> Photos { get; set; }
+        public DbSet<EventMarkUser> EventMarkUsers { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }

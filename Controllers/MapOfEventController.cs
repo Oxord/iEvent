@@ -21,7 +21,6 @@ using System.Xml.Linq;
 
 namespace iEvent.Controllers
 {
-    [Authorize]
     [Route("api/[controller]/[action]")]
     [ApiController]
     public class MapOfEventController : ControllerBase
@@ -45,7 +44,7 @@ namespace iEvent.Controllers
 
         private Task<User> GetCurrentUserAsync() => _userManager.GetUserAsync(HttpContext.User);
 
-        [Authorize(Roles = UserRoles.Teacher)]
+        [Authorize(Policy = "CreatorMaps")]
         [HttpPost(Name = "CreateMapOfEvent")]
         public async Task<IActionResult> CreateMap([FromBody] CreateMapModel model)
         {
@@ -59,7 +58,7 @@ namespace iEvent.Controllers
             }
             if (mapExists == true)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "Map of event already exists!" });
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
             MapOfEvent mapOfevent = new()
@@ -71,10 +70,30 @@ namespace iEvent.Controllers
 
             _MapRepository.AddMapOfEvent(mapOfevent);
             _unitOfWork.Commit();
-            return Ok(new Response { Status = "Success", Message = "Map of Event created successfully!" });
+            return Ok();
 
         }
 
+        [Authorize(Policy = "CreatorMaps")]
+        [HttpPut(Name = "EditMapOfEvent")]
+        public async Task<IActionResult> EditMapOfEvent([FromBody] CreateMapModel model, int mapId)
+        {
+            var current_map = _context.mapOfEvents.FirstOrDefault(x => x.Id == mapId);
+
+            if (current_map == null)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+
+            current_map.Name = model.Name;
+            current_map.Description = model.Description;
+            current_map.Audience = model.Audience;
+            _unitOfWork.Commit();
+            return Ok();
+
+        }
+
+        [Authorize]
         [HttpGet(Name = "GetMaps")]
         public async Task<ActionResult<List<MapOfEventView>>> GetMaps()
         {
@@ -94,7 +113,7 @@ namespace iEvent.Controllers
             {
                 return _MapRepository.GetMaps(events);
             }
-            return StatusCode(StatusCodes.Status404NotFound, new Response { Status = "Error", Message = "Для вас карт событий не нашлось :(" });
+            return NotFound();
 
         }
 
@@ -106,7 +125,7 @@ namespace iEvent.Controllers
             {
                 return _MapRepository.GetMap(CurrentMap);
             }
-            return StatusCode(StatusCodes.Status404NotFound, new Response { Status = "Error", Message = "Такой карты событий нету" });
+            return NotFound();
         }
 
 

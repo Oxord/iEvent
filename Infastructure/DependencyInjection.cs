@@ -16,8 +16,7 @@ namespace iEvent.Infastructure
             services.AddScoped<IEventRepository, EventRepository>();
             services.AddScoped<IMapOfEventRepository, MapOfEventRepository>();
             services.AddScoped<IProblemRepository, ProblemRepository>();
-            //services.AddScoped<IUserRepository, UserRepository>();
-            //services.AddScoped<IPostRepository, PostRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUnitOfWork>(sp => sp.GetService<ApplicationDbContext>());
             services.AddTransient<IManageImage, ManageImage>();
 

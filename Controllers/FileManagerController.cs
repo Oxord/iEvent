@@ -28,7 +28,12 @@ namespace iEvent.Controllers
                 var result = await _iManageImage.DownloadFile(currnetPhoto);
                 return File(result.Item1, result.Item2, result.Item2);
             }
-            return BadRequest("Такого фота нет");
+            if (photoId == 0)
+            {
+                var result = await _iManageImage.DownloadDefaultUserIcon();
+                return File(result.Item1, result.Item2, result.Item2);
+            }
+            return NotFound();
         }
 
     }

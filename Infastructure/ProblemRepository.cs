@@ -27,31 +27,36 @@ namespace iEvent.Infastructure
             return _context.Problems.ToList().ConvertAll(x => new ProblemInList { Title = x.Title, Category = x.Category });
         }
 
-        public ProblemOnly GetProblemWithPhoto(Problem current_problem, List<ViewCommentModel> comments, List<int> photos)
+        public ProblemOnly GetProblemWithPhoto(Problem current_problem, List<ViewCommentModel> comments, List<int> photos, User authorProblem)
         {
             return new ProblemOnly
             {
                 Title = current_problem.Title,
                 Category = current_problem.Category,
                 DescriptionText = current_problem.DescriptionText,
-                authorName = current_problem.authorName,
-                authorSurname = current_problem.authorSurname,
+                authorName = authorProblem.Name,
+                authorSurname = authorProblem.Surname,
                 Comments = comments,
                 photos = photos,
             };
         }
 
-        public ProblemOnly GetProblem(Problem current_problem, List<ViewCommentModel> comments)
+        public ProblemOnly GetProblem(Problem current_problem, List<ViewCommentModel> comments, User authorProblem)
         {
             return new ProblemOnly
             {
                 Title = current_problem.Title,
                 Category = current_problem.Category,
                 DescriptionText = current_problem.DescriptionText,
-                authorName = current_problem.authorName,
-                authorSurname = current_problem.authorSurname,
+                authorName = authorProblem.Name,
+                authorSurname = authorProblem.Surname,
                 Comments = comments
             };
+        }
+
+        public void RemoveProblem(Problem prob)
+        {
+            _context.Problems.Remove(prob);
         }
 
         /*
