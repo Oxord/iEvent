@@ -20,17 +20,12 @@ namespace iEvent.Controllers
 
         [HttpGet]
         [Route("Downloadhoto")]
-        public async Task<IActionResult> DownloadUserPhoto(int photoId)
+        public async Task<IActionResult> DownloadPhoto(int photoId)
         {
             var currnetPhoto = _context.Photos.FirstOrDefault(x => x.Id == photoId);
             if (currnetPhoto != null)
             {
                 var result = await _iManageImage.DownloadFile(currnetPhoto);
-                return File(result.Item1, result.Item2, result.Item2);
-            }
-            if (photoId == 0)
-            {
-                var result = await _iManageImage.DownloadDefaultUserIcon();
                 return File(result.Item1, result.Item2, result.Item2);
             }
             return NotFound();

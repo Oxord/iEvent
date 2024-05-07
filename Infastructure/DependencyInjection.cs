@@ -1,6 +1,7 @@
 ﻿using iEvent.Domain;
 using iEvent.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 
 namespace iEvent.Infastructure
 {

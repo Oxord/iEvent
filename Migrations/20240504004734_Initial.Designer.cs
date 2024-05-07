@@ -12,7 +12,7 @@ using iEvent.Infastructure;
 namespace iEvent.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240430233716_Initial")]
+    [Migration("20240504004734_Initial")]
     partial class Initial
     {
         /// <inheritdoc />

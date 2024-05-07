@@ -34,14 +34,14 @@ namespace iEvent.Controllers
         private readonly IManageImage _iManageImage;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IUserRepository _userRepository;
-
+        private readonly IWebHostEnvironment _hostingEnv;
 
         public UserController(UserManager<User> userManager, 
             RoleManager<IdentityRole> roleManager,
             SignInManager<User> signInManager, 
             IConfiguration configuration, ApplicationDbContext context,
             IUnitOfWork unitOfWork, IManageImage iManageImage,
-            IUserRepository userRepository)
+            IUserRepository userRepository, IWebHostEnvironment hostingEnv)
 
         {
             _userManager = userManager;
@@ -52,6 +52,7 @@ namespace iEvent.Controllers
             _iManageImage = iManageImage;
             _unitOfWork = unitOfWork;
             _userRepository = userRepository;
+            _hostingEnv = hostingEnv;
         }
 
 
@@ -178,6 +179,32 @@ namespace iEvent.Controllers
             return Ok(result);
         }
 
+        [HttpPost("UserPhoto")]
+        public async Task<ActionResult<User>> UserPhoto(IFormFile _IFormFile)
+        {
+            if (_IFormFile != null)
+            {
+                var a = _hostingEnv.WebRootPath;
+                var fileName = Path.GetFileName(_IFormFile.FileName);
+                var filePath = Path.Combine(_hostingEnv.WebRootPath, "images\\Cars", fileName);
+
+                using (var fileSteam = new FileStream(filePath, FileMode.Create))
+                {
+                    await _IFormFile.CopyToAsync(fileSteam);
+                }
+
+                Photo car = new Photo();
+                car.Name = filePath;  //save the filePath to database ImagePath field.
+                _context.Add(car);
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
+
         [HttpPut("EditUser")]
         [Authorize]
         public async Task<ActionResult<User>> EditUser([FromBody] EditUserModel model)
@@ -201,7 +228,8 @@ namespace iEvent.Controllers
                 var result = await _iManageImage.DownloadFile(currnetPhoto);
                 return File(result.Item1, result.Item2, result.Item2);
             }
-            return NotFound();
+            var resul = await _iManageImage.DownloadDefaultUserIcon();
+            return File(resul.Item1, resul.Item2, resul.Item2);
         }
 
         [Authorize]
