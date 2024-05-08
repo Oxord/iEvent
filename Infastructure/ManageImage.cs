@@ -85,21 +85,18 @@ namespace iEvent.Infastructure
                 FileInfo _FileInfo = new FileInfo(_IFormFile.FileName);
                 FileName = Guid.NewGuid() + "_" + _IFormFile.FileName;
                 Photo photo = new Photo() { Name = FileName };
-                currentUser.ProfilePhoto = photo.Id;
-                var _GetFilePath = Common.GetFilePath(FileName);
-                //return _GetFilePath;
-                using (var _FileStream = new FileStream(_GetFilePath, FileMode.Create))
-                {
-                    //await _IFormFile.CopyToAsync(_FileStream);
-                     _IFormFile.CopyTo(_FileStream);
-                }
                 _context.Photos.Add(photo);
                 _context.SaveChanges();
+                currentUser.ProfilePhoto = photo.Id;
+                var _GetFilePath = Common.GetFilePath(FileName);
+                using (var _FileStream = new FileStream(_GetFilePath, FileMode.Create))
+                {
+                    await _IFormFile.CopyToAsync(_FileStream);
+                }
                 return FileName;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
                 throw ex;
             }
         }

@@ -9,7 +9,7 @@
         }
         public static string GetStaticContentDirectory()
         {
-            var result = Path.Combine("//var//netcore//Uploads//Images//");
+            var result = Path.Combine("./Uploads/Images/");
             if (!Directory.Exists(result))
             {
                 Directory.CreateDirectory(result);

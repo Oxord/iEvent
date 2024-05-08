@@ -8,6 +8,8 @@ using iEvent.DTO;
 using iEvent.DTO.UserDto;
 using iEvent.Infastructure;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +17,10 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure.Internal;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.VisualBasic;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
@@ -35,13 +40,13 @@ namespace iEvent.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IUserRepository _userRepository;
         private readonly IWebHostEnvironment _hostingEnv;
-
+        private readonly ICompanyInfoService _service;
         public UserController(UserManager<User> userManager, 
             RoleManager<IdentityRole> roleManager,
             SignInManager<User> signInManager, 
             IConfiguration configuration, ApplicationDbContext context,
             IUnitOfWork unitOfWork, IManageImage iManageImage,
-            IUserRepository userRepository, IWebHostEnvironment hostingEnv)
+            IUserRepository userRepository, IWebHostEnvironment hostingEnv, ICompanyInfoService service)
 
         {
             _userManager = userManager;
@@ -53,6 +58,7 @@ namespace iEvent.Controllers
             _unitOfWork = unitOfWork;
             _userRepository = userRepository;
             _hostingEnv = hostingEnv;
+            _service = service;
         }
 
 
@@ -179,31 +185,6 @@ namespace iEvent.Controllers
             return Ok(result);
         }
 
-        [HttpPost("UserPhoto")]
-        public async Task<ActionResult<User>> UserPhoto(IFormFile _IFormFile)
-        {
-            if (_IFormFile != null)
-            {
-                var a = _hostingEnv.WebRootPath;
-                var fileName = Path.GetFileName(_IFormFile.FileName);
-                var filePath = Path.Combine(_hostingEnv.WebRootPath, "images\\Cars", fileName);
-
-                using (var fileSteam = new FileStream(filePath, FileMode.Create))
-                {
-                    await _IFormFile.CopyToAsync(fileSteam);
-                }
-
-                Photo car = new Photo();
-                car.Name = filePath;  //save the filePath to database ImagePath field.
-                _context.Add(car);
-                await _context.SaveChangesAsync();
-                return Ok();
-            }
-            else
-            {
-                return BadRequest();
-            }
-        }
 
         [HttpPut("EditUser")]
         [Authorize]
@@ -215,8 +196,6 @@ namespace iEvent.Controllers
             _unitOfWork.Commit();
             return Ok();
         }
-
-
         [HttpGet("GetUserPhoto")]
         [Authorize]
         public async Task<IActionResult> GetUserPhoto()
@@ -254,5 +233,50 @@ namespace iEvent.Controllers
 
             return token;
         }
+        /*
+        [HttpPost("UserPhoto")]
+        public async Task<ActionResult<String>> UserPhoto(IFormFile _IFormFile)
+        {
+            try { await _service.updateUserCompanyInfoWithFile(_IFormFile); } catch (Exception ex) { throw ex; }; 
+            var result = await _service.updateUserCompanyInfoWithFile(_IFormFile);
+            return result;
+        }
+        */
     }
+
+    public interface ICompanyInfoService
+    {
+        Task<string> updateUserCompanyInfoWithFile(IFormFile info);
+    }
+
+    internal class CompanyInfoService: ICompanyInfoService
+    {
+
+        public static IWebHostEnvironment _environment;
+        public CompanyInfoService(IWebHostEnvironment environment)
+        {
+            _environment = environment;
+        }
+
+        public async Task<string> updateUserCompanyInfoWithFile(IFormFile info)
+        {
+            await CreateFile("./Uploads/Images/", info);
+            return "Ok";
+        }
+        private async Task CreateFile(string savePath, IFormFile formFile)
+        {
+            if (!Directory.Exists(savePath))
+            {
+                Directory.CreateDirectory(savePath);
+            }
+
+            if (formFile.Length <= 0) return;
+
+            using (var filestream = File.Create($"{savePath}{formFile.FileName}"))
+            {
+                await formFile.CopyToAsync(filestream); //Problem is here
+            }
+        }
+    }
+
 }

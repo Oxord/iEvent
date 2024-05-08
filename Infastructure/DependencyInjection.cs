@@ -1,4 +1,5 @@
-﻿using iEvent.Domain;
+﻿using iEvent.Controllers;
+using iEvent.Domain;
 using iEvent.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
@@ -20,6 +21,7 @@ namespace iEvent.Infastructure
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUnitOfWork>(sp => sp.GetService<ApplicationDbContext>());
             services.AddTransient<IManageImage, ManageImage>();
+            services.AddScoped<ICompanyInfoService, CompanyInfoService>();
 
         }
     }
