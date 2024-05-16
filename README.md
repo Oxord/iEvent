@@ -1,1 +1,1 @@
-# iEvent_Authorization-master
+# Backend for mobile app iEvent
